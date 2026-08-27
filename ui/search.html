@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playlist Search</title>
+    <style>
+      :root {
+        --bg: rgba(18, 16, 14, 0.92);
+        --panel: rgba(32, 28, 24, 0.96);
+        --text: #f4eee6;
+        --muted: #b7aa9a;
+        --line: rgba(255, 255, 255, 0.08);
+        --accent: #e8a54b;
+        --sel: rgba(232, 165, 75, 0.16);
+        --playing: #7dcea0;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: rgba(244, 238, 230, 0.9);
+          --panel: rgba(255, 252, 247, 0.96);
+          --text: #1c1610;
+          --muted: #6f6458;
+          --line: rgba(28, 22, 16, 0.08);
+          --accent: #b86a12;
+          --sel: rgba(184, 106, 18, 0.12);
+          --playing: #1f7a4d;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+        color: var(--text);
+        font: 14px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      }
+      .stage {
+        height: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 8vh 24px 24px;
+      }
+      .panel {
+        width: min(560px, 100%);
+        max-height: 72vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+        overflow: hidden;
+      }
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .search svg {
+        flex: none;
+        opacity: 0.7;
+      }
+      #q {
+        flex: 1;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
+      }
+      #q::placeholder {
+        color: var(--muted);
+      }
+      .hint {
+        padding: 0 16px 10px;
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.02em;
+      }
+      #list {
+        overflow: auto;
+        padding: 4px 6px 8px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 8px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 9px 10px;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .row.active {
+        background: var(--sel);
+      }
+      .mark {
+        width: 4px;
+        height: 28px;
+        border-radius: 4px;
+        background: transparent;
+      }
+      .row.active .mark {
+        background: var(--accent);
+      }
+      .title {
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .artist {
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .now {
+        color: var(--playing);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .empty {
+        padding: 28px 16px 32px;
+        text-align: center;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <div class="panel" data-clickable>
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6" />
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+          <input id="q" type="text" data-clickable placeholder="Search songs or artists…" autocomplete="off" spellcheck="false" />
+        </div>
+        <div class="hint">↑↓ select · Enter play · Esc close · artist: / title:</div>
+        <div id="list"></div>
+      </div>
+    </div>
+    <script>
+      const input = document.getElementById("q");
+      const listEl = document.getElementById("list");
+      let items = [];
+      let active = 0;
+      let debounce = null;
+
+      function esc(value) {
+        return String(value || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function render() {
+        if (!items.length) {
+          const q = input.value.trim();
+          listEl.innerHTML =
+            '<div class="empty">' +
+            (q ? "No results" : "Playlist is empty") +
+            "</div>";
+          return;
+        }
+        if (active >= items.length) active = items.length - 1;
+        if (active < 0) active = 0;
+        listEl.innerHTML = items
+          .map(function (item, i) {
+            const artist = item.artist || "Unknown artist";
+            const title = item.title || "Untitled";
+            return (
+              '<div class="row' +
+              (i === active ? " active" : "") +
+              '" data-clickable data-i="' +
+              i +
+              '">' +
+              '<div class="mark"></div>' +
+              "<div><div class=\"title\">" +
+              esc(title) +
+              '</div><div class="artist">' +
+              esc(artist) +
+              (item.album ? " · " + esc(item.album) : "") +
+              "</div></div>" +
+              (item.isPlaying ? '<div class="now">playing</div>' : "") +
+              "</div>"
+            );
+          })
+          .join("");
+        const row = listEl.querySelector(".row.active");
+        if (row && row.scrollIntoView) {
+          row.scrollIntoView({ block: "nearest" });
+        }
+      }
+
+      function sendQuery() {
+        iina.postMessage("query", input.value);
+      }
+
+      function playActive() {
+        if (!items[active]) return;
+        iina.postMessage("play", { index: items[active].index });
+      }
+
+      input.addEventListener("input", function () {
+        clearTimeout(debounce);
+        debounce = setTimeout(sendQuery, 80);
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          iina.postMessage("close");
+          return;
+        }
+        if (event.key === "ArrowDown") {
+          event.preventDefault();
+          active = Math.min(active + 1, Math.max(items.length - 1, 0));
+          render();
+          return;
+        }
+        if (event.key === "ArrowUp") {
+          event.preventDefault();
+          active = Math.max(active - 1, 0);
+          render();
+          return;
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
+          playActive();
+        }
+      });
+
+      listEl.addEventListener("click", function (event) {
+        const row = event.target.closest(".row");
+        if (!row) return;
+        active = Number(row.getAttribute("data-i"));
+        playActive();
+      });
+
+      iina.onMessage("open", function (data) {
+        items = (data && data.items) || [];
+        active = 0;
+        input.value = (data && data.query) || "";
+        render();
+        setTimeout(function () {
+          input.focus();
+          input.select();
+        }, 30);
+      });
+
+      iina.onMessage("results", function (data) {
+        items = (data && data.items) || [];
+        active = 0;
+        render();
+      });
+
+      iina.postMessage("ready");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <div class="pref-section">
+      Keyboard shortcut (mpv key format)
+      <div style="margin-top: 2px">
+        <input type="text" data-pref-key="shortcut" style="width: 100%; margin-top: 2px" />
+      </div>
+      <p class="small secondary pref-help">
+        Examples: Meta+f (⌘F), Meta+Shift+f, /. Restart IINA after changing this so the Plugin menu picks it up.
+      </p>
+    </div>
+    <div class="pref-section">
+      Artist / title metadata
+      <div style="margin-top: 6px">
+        <label>
+          <input type="radio" name="probeMode" value="filename" />
+          Filename only
+        </label>
+      </div>
+      <div>
+        <label>
+          <input type="radio" name="probeMode" value="mdls" />
+          Filename + Spotlight (mdls)
+        </label>
+      </div>
+      <div>
+        <label>
+          <input type="radio" name="probeMode" value="mdls-ffprobe" />
+          Filename + Spotlight + ffprobe
+        </label>
+      </div>
+      <p class="small secondary pref-help">
+        IINA does not expose artist tags for unplayed playlist items. Spotlight ships with macOS;
+        ffprobe is skipped automatically if it is not installed (brew install ffmpeg).
+      </p>
+    </div>
+  </body>
+</html>

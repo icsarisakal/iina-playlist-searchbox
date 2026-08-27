@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playlist Searchbox preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #0e0c0b;
+        color: #f4eee6;
+        font: 14px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      }
+      .desk {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 36px 24px 48px;
+        background:
+          radial-gradient(1200px 600px at 50% -10%, #3a2a18 0%, transparent 55%),
+          #0e0c0b;
+      }
+      .window {
+        width: 560px;
+        height: fit-content;
+        background: rgba(32, 28, 24, 0.98);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+        overflow: hidden;
+      }
+      .chrome {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .dot.r { background: #ff5f57; }
+      .dot.y { background: #febc2e; }
+      .dot.g { background: #28c840; }
+      .chrome-title {
+        flex: 1;
+        text-align: center;
+        font-size: 12px;
+        color: #b7aa9a;
+        margin-right: 44px;
+      }
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px 10px;
+      }
+      .search svg { opacity: 0.7; }
+      .q {
+        flex: 1;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: #f4eee6;
+        font: inherit;
+        font-size: 16px;
+      }
+      .hint {
+        padding: 0 16px 10px;
+        color: #b7aa9a;
+        font-size: 11px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .list { padding: 6px 6px 10px; }
+      .row {
+        display: grid;
+        grid-template-columns: 8px 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 10px;
+        border-radius: 10px;
+      }
+      .row.active { background: rgba(232, 165, 75, 0.16); }
+      .mark { width: 4px; height: 26px; border-radius: 4px; }
+      .row.active .mark { background: #e8a54b; }
+      .title { font-weight: 600; }
+      .artist { color: #b7aa9a; font-size: 12px; }
+      .now { color: #7dcea0; font-size: 11px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="desk">
+      <div class="window" id="frame">
+        <div class="chrome">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <div class="chrome-title">Search Playlist — Playlist Searchbox</div>
+        </div>
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.6" />
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+          <input class="q" id="q" value="" readonly />
+        </div>
+        <div class="hint">↑↓ select · Enter play · Esc close · artist: / title:</div>
+        <div class="list" id="list"></div>
+      </div>
+    </div>
+    <script>
+      const ALL = [
+        { title: "Bohemian Rhapsody", artist: "Queen", album: "A Night at the Opera" },
+        { title: "Hotel California", artist: "Eagles", album: "Hotel California" },
+        { title: "Hey Jude", artist: "The Beatles", album: "1" },
+        { title: "Highway to Hell", artist: "AC/DC", album: "Highway to Hell" },
+        { title: "Yellow", artist: "Coldplay", album: "Parachutes" },
+        { title: "Zombie", artist: "The Cranberries", album: "No Need to Argue" },
+        { title: "Numb", artist: "Linkin Park", album: "Meteora" },
+        { title: "Nothing Else Matters", artist: "Metallica", album: "Metallica" },
+        { title: "Enter Sandman", artist: "Metallica", album: "Metallica" },
+        { title: "Imagine", artist: "John Lennon", album: "Imagine" },
+        { title: "Every Breath You Take", artist: "The Police", album: "Synchronicity" },
+        { title: "Everybody Wants To Rule The World", artist: "Tears for Fears", album: "Songs from the Big Chair" },
+        { title: "Blinding Lights", artist: "The Weeknd", album: "After Hours" },
+        { title: "Rolling in the Deep", artist: "Adele", album: "21" },
+        { title: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars", album: "Uptown Special" },
+        { title: "Levitating", artist: "Dua Lipa", album: "Future Nostalgia" },
+        { title: "Shape of You", artist: "Ed Sheeran", album: "÷" },
+        { title: "Take On Me", artist: "a-ha", album: "Hunting High and Low" },
+        { title: "Instant Crush", artist: "Daft Punk", album: "Random Access Memories" },
+        { title: "Dust in the Wind", artist: "Kansas", album: "Point of Know Return" },
+        { title: "More Than Words", artist: "Extreme", album: "Extreme II: Pornograffitti" },
+        { title: "The Sound of Silence", artist: "Simon & Garfunkel", album: "Sounds of Silence" },
+        { title: "Feeling Good", artist: "Muse", album: "Origin of Symmetry" },
+        { title: "Without Me", artist: "Eminem", album: "The Eminem Show" },
+        { title: "Lose Yourself", artist: "Eminem", album: "8 Mile" }
+      ];
+      const params = new URLSearchParams(location.search);
+      const q = params.get("q") || "";
+      const playing = Number(params.get("playing") || "0");
+      document.getElementById("q").value = q;
+      document.getElementById("q").placeholder = "Search songs or artists…";
+      const needle = q.replace(/^artist:\s*/i, "").toLowerCase();
+      const artistOnly = /^artist:/i.test(q);
+      const items = ALL.filter((item) => {
+        if (!needle) return true;
+        const hay = artistOnly
+          ? item.artist.toLowerCase()
+          : (item.artist + " " + item.title + " " + item.album).toLowerCase();
+        return hay.indexOf(needle) !== -1;
+      });
+      document.getElementById("list").innerHTML = items
+        .map(function (item, i) {
+          const on = !q && i === playing;
+          return (
+            '<div class="row' + (i === 0 ? " active" : "") + '">' +
+            '<div class="mark"></div>' +
+            "<div><div class=\"title\">" + item.title + "</div>" +
+            '<div class="artist">' + item.artist + " · " + item.album + "</div></div>" +
+            (on ? '<div class="now">playing</div>' : "") +
+            "</div>"
+          );
+        })
+        .join("");
+    </script>
+  </body>
+</html>

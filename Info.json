@@ -1,0 +1,22 @@
+{
+  "name": "Playlist Searchbox",
+  "identifier": "com.icsarisakal.iina-searchbox",
+  "version": "1.0.0",
+  "description": "Search the current playlist by song title and artist.",
+  "author": {
+    "name": "icsarisakal",
+    "url": "https://github.com/icsarisakal/iina-playlist-searchbox"
+  },
+  "entry": "main.js",
+  "permissions": [
+    "file-system",
+    "show-osd"
+  ],
+  "preferencesPage": "pref.html",
+  "preferenceDefaults": {
+    "shortcut": "Meta+f",
+    "probeMode": "mdls-ffprobe"
+  },
+  "ghRepo": "icsarisakal/iina-playlist-searchbox",
+  "ghVersion": 1
+}
